@@ -1,50 +1,56 @@
-import spaces
 from gym import spaces
+import sys
+
+DRONE_SPEED = 1.0
 
 class Drone:
     def __init__(self, base_camp_loc):
-        # up down left right : 0 1 2 3
         self.base_camp_loc = base_camp_loc
-        self.loc = (base_camp_loc[0], base_camp_loc[1])
-        
-        self.people_locs = set()
-        self.action_space = spaces.Discrete(4)
-        
-    '''
-    @param observation is a N x N grid representing the tiles that this drone can see
-    @param reward ML?
-    @param done for when he simulation is over
-    '''
-    def act(self, observation, reward, done):
+        self.loc = base_camp_loc
+        # add random noise to starting location
+        self.loc[0] += random.random() - 0.5
+        self.loc[1] += random.random() - 0.5
 
-        # update neighbors
-        for x in range(7):
-            for y in range(7):
-                if x == 0 and y == 0: continue
-                if type(observation[x][y]) == Drone:
-                    observation[x][y].receive(self.people_locs)
+        self.people_locs = set() # floating points
+        self.explored_locs = set() # tiles in grid
+
+    '''
+    @param vision: the set of people/locations that this drone can see
+    '''
+    def look(self, vision):
+        self.people_locs = self.people_locs.union(vision)
+
+    '''
+    return a grid representation of the information collected so far
+    '''
+    def message(self):
+        return self.people_locs, explored_locs
+
+    '''
+    receive an update from the connected network
+    '''
+    def receive(self, people_locs, explored_locs):
+        look(ppl)
+        self.explored_locs = self.explored_locs.union(explored_locs)
+
+
+    def move(self):
+        # TODO use ML algorithm to determine direction
         
-        # TODO use ML to determine action
-        action = self.action_space.sample()
+        # each between -1 and 1
+        dir_x = 0.0
+        dir_y = 0.0
         
-        # up down left right
-        if action == 0:
-            self.loc[1] += 1
-        elif action == 1:
-            self.loc[1] -= 1
-        elif action == 2:
-            self.loc[0] -= 1
-        elif action == 3:
-            self.loc[0] += 1
+        dir_len = (dir_x**2+dir_y**2)**(0.5)
         
-        return action
+        # actual difference in location
+        if dir_len > sys.float_info.epsilon:
+            self.loc[0] += DRONE_SPEED * dir_x/dir_len
+            self.loc[1] += DRONE_SPEED * dir_y/dir_len
     
-    '''
-    update this drones knowledge of the location of people
-    '''
-    def receive(history):
-        pass
+            
 
+        
 if __name__ == '__main__':
     print("Drone test")
     

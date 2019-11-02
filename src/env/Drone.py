@@ -6,7 +6,6 @@ DRONE_SPEED = 1.0
 class Drone:
     def __init__(self, base_camp_loc):
         self.base_camp_loc = base_camp_loc
-        self.last_seen_drone = base_camp_loc        
         self.loc = base_camp_loc # + random noise???
 
         self.people_locs = set() # floating points
@@ -33,7 +32,7 @@ class Drone:
 
 
     def move(self):
-        # use ML algorithm to determine direction
+        # TODO use ML algorithm to determine direction
         
         # each between -1 and 1
         dir_x = 0.0
@@ -43,8 +42,9 @@ class Drone:
         
         # actual difference in location
         if dir_len > sys.float_info.epsilon:
-            self.loc[0] += dir_x/dir_len
-            self.loc[1] += dir_y/dir_len
+            self.loc[0] += DRONE_SPEED * dir_x/dir_len
+            self.loc[1] += DRONE_SPEED * dir_y/dir_len
+    
             
 
         

@@ -6,7 +6,10 @@ DRONE_SPEED = 1.0
 class Drone:
     def __init__(self, base_camp_loc):
         self.base_camp_loc = base_camp_loc
-        self.loc = base_camp_loc # + random noise???
+        self.loc = base_camp_loc
+        # add random noise to starting location
+        self.loc[0] += random.random() - 0.5
+        self.loc[1] += random.random() - 0.5
 
         self.people_locs = set() # floating points
         self.explored_locs = set() # tiles in grid

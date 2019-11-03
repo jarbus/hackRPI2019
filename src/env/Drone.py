@@ -1,15 +1,16 @@
 # from gym import spaces
 import sys
 import random
-import utils
+import env.utils
 
 class Drone:
-    def __init__(self, drone_id: int,
-                 base_camp_loc,
-                 drone_speed: float,
-                 comm_range: float,
-                 vision_range: float,
-                 map_size: [int, int]):
+    def __init__(self, *,
+            drone_id: int,
+            drone_speed: float,
+            comm_range: float,
+            vision_range: float,
+            base_camp_loc: [int] = [10, 10],
+            map_size: [int, int]):
         self.base_camp_loc = base_camp_loc
         self.loc = base_camp_loc
         
@@ -18,6 +19,7 @@ class Drone:
         self.loc[1] += random.random() - 0.5
 
         self.people_locs = set() # floating points
+        self.unsent_locs = 0
         self.explored_locs = set() # tiles in grid
 
         self.drone_speed = drone_speed

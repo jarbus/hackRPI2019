@@ -30,9 +30,8 @@ def parse_args():
 
 def train(arglist):
     # Create environment
-    env = Recovery(arglist.map_size, arglist.num_drones, arglist.base_camp, arglist.num_people, arglist.debug)
+    env = Recovery(map_size=arglist.map_size, drone_count=arglist.num_drones, base_camp=arglist.base_camp, num_people=arglist.num_people, debug=True)
     # Create agent trainers
-    obs_shape_n = [env.observation_space[i].shape for i in range(env.n)]
 
     # Initialize
 
@@ -57,7 +56,6 @@ def train(arglist):
     print('Starting iterations...')
     while True:
         # get action
-        action_n = [agent.action(obs) for agent, obs in zip(trainers,obs_n)]
         # environment step
         new_obs_n, rew_n, done_n, info_n = env.step(action_n)
         episode_step += 1
@@ -139,5 +137,5 @@ def train(arglist):
 if __name__ == '__main__':
     arglist = parse_args()
     arglist.base_camp = [np.random.random(arglist.map_size[0]), np.random.random(arglist.map_size[1])]
-    print(arglist.map_size)
-    # train(arglist)
+    print(arglist)
+    train(arglist)

@@ -4,9 +4,9 @@ import gym
 import numpy as np
 
 # Model Parameters
-hidden_n = 300
-input_n = 16
-output_n = 16
+hidden_n = 4
+input_n = 9
+output_n = 2
 
 def sigmoid(x: np.array) -> np.array:
     return 1.0/(1.0 + np.exp(-x))
@@ -15,7 +15,7 @@ class ReinforceAgent:
 
     def __init__(self, *,
                  render: bool = False,
-                 batch_size: int = 10,
+                 batch_size: int = 5,
                  episode_length: int = 300,
                  learning_rate: float = 1e-4,
                  gamma: float = 0.99,
@@ -42,12 +42,32 @@ class ReinforceAgent:
 
     def train(self, env: gym.Env):
         """ Trains model using passed environment. """
-        obs = env.reset()
-        while True: # Continuously train over batches of 10 episodes
-            if self.render: env.render()
-
+        episode = 0
+        while True: # Continuously train over batches of 5 episodes
+            obs = env.reset() # np.array of [x = params, y = agents]
+            drone_count = obs.shape()[1]
+            xs = [] # An array per tick, with agents stacked to the right
+            hs = [] # An array per tick, with neurons stack to the right
+            dlogps1 = []
+            dlogps2 = []
             
-            pass
+            for tick in range(self.episode_length):
+                if self.render: env.render()
+                
+                actions, hidden = self.act(obs)
+
+                # Record information for backprop
+                xs.append(np.reshape(obs, (1,-1)))
+                hs.append(np.reshape(obs, (1,-1)))
+                y1 = [1 if x >= 0.5 else 0 for x in actions[0,]]
+                y2 = [1 if y >= 0.5 else 0 for y in actions[1,]]
+                dlogps1.append(y1)
+                dlogps2.append(y2)
+                
+                
+                
+            if episode % 10 == 9:
+                pass
 
     def _discount_reward(self, rewards: np.array) -> np.array:
         """ Reduces the magnitude of the reward for the earlier actions. """
@@ -60,10 +80,11 @@ class ReinforceAgent:
         return discount_rewards
 
     def act(self, x: np.array) -> np.array:
-        """ Returns an array containing the probabilities of actions, and 
-        the values of the hidden layers. """
+        """ @param x: np.array (size x = params, y = agents)
+        Returns np.array (size x = agents, y = 2) of how each agent moves and
+        an np.array (size x = agents, y = hidden neurons)"""
         
-        hidden = np.dot(self.model["w1"], x)
+        hidden = np.dot(self.model["w1"], np.transpose(x))
         hidden[hidden < 0] = 0 # Apply lower bound to values (ReLU)
         signal = np.dot(self.model["w2"], hidden)
         return sigmoid(signal), hidden

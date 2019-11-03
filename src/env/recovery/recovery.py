@@ -28,8 +28,8 @@ class Recovery(gym.Env):
         
         self.base_camp_loc = base_camp
         self.bounds = map_size
-        self.map_x = map_size[0]
-        self.map_y = map_size[1]
+        self.WIDTH = map_size[0]
+        self.HEIGHT = map_size[1]
         self.num_people = num_people
         
         # A complete network of drones including information about distance to other drones
@@ -39,7 +39,7 @@ class Recovery(gym.Env):
  
         # initializes 2xnum_people array of people, person i at
         # self.people[i][0], self.people[i][1]
-        self.people = np.random.uniform(0, self.map_x, 2*num_people)
+        self.people = np.random.uniform(0, self.WIDTH, 2*num_people)
         np.resize(self.people, (2, self.num_people))
 
         if(debug):
@@ -70,36 +70,36 @@ class Recovery(gym.Env):
         ppl_bins = [[set() for y in range(int(self.HEIGHT//VISION_RANGE))] for x in range(int(self.WIDTH//VISION_RANGE))]
         
         # place drones in their respective bins
-        for d in drones:
-            x,y = self.get_bin_index(d.loc[0], d.loc[1], COMM_RANGE)
+        for d in self.drones:
+            x, y = self.get_bin_index(d.loc[0], d.loc[1], COMM_RANGE)
             bins[x][y].add(d)
         
         # place people in the right ppl_bin
         for p in self.people:
-            x,y = self.get_bin_index(p[0], p[1], VISION_RANGE)
+            x, y = self.get_bin_index(p[0], p[1], VISION_RANGE)
             ppl_bins[x][y].add(p)
         
         # DFS drones to get connected components
         components = []
         unexplored = set(self.drones)
-        while unexplored.size() > 0:
+        while len(unexplored) > 0:
             # find the component of a random unexplored drone
             queue = [unexplored.pop()]
             component = set()
-            while queue.size() > 0:
+            while len(queue) > 0:
                 cur = queue.pop()
                 # update cur 
                 close_bins = self.neighboring_bins(cur.loc[0], cur.loc[1], VISION_RANGE, ppl_bins)
-                potential_people = reduce(lambda x,y: x.union(y), close_bins)
+                potential_people = reduce(lambda x, y: x.union(y), close_bins)
                 people = filter(lambda p: d.can_see(p, VISION_RANGE), potential_people)
                 cur.update(self.WIDTH, self.HEIGHT, VISION_RANGE, people)
                 # explore the neighbors of cur
                 component.add(cur)
                 # find unexplored neighbors and add them to the queue
                 # only check this and surrounding bins
-                for bin in neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
+                for b in neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
                     # check all drones in this bin
-                    for d in bin:
+                    for d in b:
                         if d != cur and cur.can_communicate(d) and d in unexplored:
                             queue.append(d)
                             unexplored.remove(d)
@@ -109,6 +109,7 @@ class Recovery(gym.Env):
     
     # step function: runs every iteration of the simulation
     def step(self, action_n):
+        done = False
         for i in range(1, len(self.drones)):
             self.drones[i].do_move(action_n[i][0], action_n[i][1])
         # determine the isolated networks and update the drones
@@ -123,14 +124,25 @@ class Recovery(gym.Env):
                 drone.set_explored_locs(net_explored_locs)
 
         # observations
+        obs_n = np.zeros((len(self.drones)-1, 9))
+        total_ppl_locs = set()
+        for i in range(0, len(self.drones)-1):
+            drone = self.drones[i+1]
+            obs_n[i][0], obs_n[i][1], obs_n[i][2], obs_n[i][3] = drone.calc_quadrant_coverages()
+            obs_n[i][4], obs_n[i][5] = drone.loc[0], drone.loc[1]
+            obs_n[i][6], obs_n[i][7] = self.WIDTH, self.HEIGHT
+            obs_n[i][8] = len(drone.people_locs)
+            total_ppl_locs.union(drone.people_locs)
 
+        if total_ppl_locs == self.num_people:
+            done = True
         
         return obs_n, Reward, done, None
 
     def reset(self):
         self.bounds = (0, 0)
-        self.map_x = 0
-        self.map_y = 0
+        self.WIDTH = 0
+        self.HEIGHT = 0
         self.num_people = 0
         self.base_camp_loc = 0
         pass

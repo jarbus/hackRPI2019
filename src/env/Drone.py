@@ -37,6 +37,32 @@ class Drone:
         
     def get_explored_locs(self):
         return self.explored_locs
+
+
+    # helper for calc_quadrant_coverages
+    # x_dir and y_dir are booleans indicating quadrant direction (x_dir = True ~ right)
+    def calc_quadrant_coverage(self, x_dir, y_dir, WIDTH, HEIGHT):
+        x_comp = lambda loc: loc[0] > self.loc[0] if x_dir else loc[0] < self.loc[0]
+        y_comp = lambda loc: loc[1] > self.loc[1] if y_dir else loc[1] < self.loc[1]
+        # count => number of explored tiles
+        # total => number of tiles in relative quadrant
+        count = sum(filter(lambda loc: int(loc[0] > self.loc[0] and loc[1] > self.loc[1]), self.explored_locs)
+        total = abs(int((WIDTH if x_dir else 0) - self.loc[0]) * int((HEIGHT if x_dir else 0) - self.loc[1]))
+        return 1.0 if count == 0 else count / total
+    
+    '''
+    determine the average exploration coverage in the four quadrants relative
+    to the location of this drone; returns 100% coverage if at edge of map
+    '''
+    def calc_quadrant_coverages(self, WIDTH, HEIGHT):
+        top_right_avg = self.calc_quadrant_coverage(true, true, WIDTH, HEIGHT)
+        top_left_avg = self.calc_quadrant_coverage(false, true, WIDTH, HEIGHT)
+        bot_right_avg = self.calc_quadrant_coverage(true, false, WIDTH, HEIGHT)
+        bot_left_avg = self.calc_quadrant_coverage(false, false, WIDTH, HEIGHT)
+        return top_right_avg, top_left_avg, bot_right_avg, bot_left_avg
+        
+        
+        
     
 
     '''
@@ -50,7 +76,6 @@ class Drone:
     def is_in_range(self, d):
         return utils.euclid(self.loc[0], self.loc[1], d.loc[0], d.loc[1]) <= VISION
         
-        
     # determine movement direction
     def calc_move(self):
         #TODO use ML algorithm to pick movement
@@ -58,11 +83,16 @@ class Drone:
         self.dir_y = 0.0
         
     # move location
-    def move(self):
+    def move(self, WIDTH, HEIGHT):
         dir_len = utils.euclid(dir_x, dir_y)
         if dir_len > sys.float_info.epsilon:
             self.loc[0] += DRONE_SPEED * dir_x/dir_len
             self.loc[1] += DRONE_SPEED * dir_y/dir_len
+            # check bounds
+            if self.loc[0] < 0.0: self.loc[0] = 0.0
+            if self.loc[0] > WIDTH: self.loc[0] = WIDTH
+            if self.loc[1] < 0.0: self.loc[0] = 0.0
+            if self.loc[1] > HEIGHT: self.loc[0] = HEIGHT
     
             
 

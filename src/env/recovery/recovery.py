@@ -71,7 +71,7 @@ class Recovery(gym.Env):
         # place people in the right ppl_bin
         for p in self.people:
             x,y = self.get_bin_index(p[0], p[1], VISION_RANGE)
-            bins[x][y].add(p)
+            ppl_bins[x][y].add(p)
         
         # DFS drones to get connected components
         components = []

@@ -2,6 +2,7 @@ from gym import spaces
 import sys
 import random
 import utils
+import maths
 
 DRONE_SPEED = 1.0
 
@@ -46,8 +47,8 @@ class Drone:
         y_comp = lambda loc: loc[1] > self.loc[1] if y_dir else loc[1] < self.loc[1]
         # count => number of explored tiles
         # total => number of tiles in relative quadrant
-        count = sum(filter(lambda loc: int(x_comp(loc) and y_comp(loc)), self.explored_locs)
-        total = abs(int((WIDTH if x_dir else 0) - self.loc[0]) * int((HEIGHT if x_dir else 0) - self.loc[1]))
+        count = sum(filter(lambda loc: int(x_comp(loc) and y_comp(loc)), self.explored_locs))
+        total = abs(int((WIDTH if x_dir else 0) - self.loc[0]) * int((HEIGHT if y_dir else 0) - self.loc[1]))
         return 1.0 if count == 0 else count / total
     
     '''

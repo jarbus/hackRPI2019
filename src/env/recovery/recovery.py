@@ -16,10 +16,11 @@ class Recovery(gym.Env):
     metadata = {"render.modes": ["human"]}
 
     def __init__(self, *,
-                 map_size: np.array,
+                 map_size: [int],
                  drone_count: int,
                  base_camp: np.array,
-                 num_people):
+                 num_people: int,
+                 debug: bool = False):
         
         self.base_camp_loc = base_camp
         self.bounds = map_size
@@ -35,6 +36,8 @@ class Recovery(gym.Env):
         self.people = np.random.uniform(0, self.map_x, 2*num_people)
         np.resize(self.people, (2, self.num_people))
 
+        if(debug):
+            print("Initialized Recovery enviroment with", len(self.drones), "drones and", len(self.people), "people")
 
     '''
     helper functions for step function
@@ -46,9 +49,9 @@ class Recovery(gym.Env):
     # this function returns a list of drone isolated networks
     def get_connected_components(self):
         # set up data structure to handle "collisions" of drones
-        bins = [[set() for y in range(int(HEIGHT//VISION))] for x in range(int(WIDTH//VISION))]
+        bins = [[set() for y in range(int(self.HEIGHT//VISION))] for x in range(int(self.WIDTH//VISION))]
         # place drones in their respective bins
-        for d in drones:
+        for d in self.drones:
             x,y = self.get_bin(d)
             bins[x][y].add(d)
         
@@ -65,8 +68,8 @@ class Recovery(gym.Env):
                 component.add(cur)
                 # find unexplored neighbors and add them to the queue
                 # only check this and surrounding bins
-                for i in range(-1,2):
-                    for j in range(-1,2):
+                for i in range(-1, 2):
+                    for j in range(-1, 2):
                         x, y = self.get_bin(cur)
                         x += i
                         y += j
@@ -88,8 +91,8 @@ class Recovery(gym.Env):
         
         # consolidate information in each connected components
         for component in components:
-            net_people_locs = reduce((lambda x,y: x.union(y)), [set()]+[d.get_people() for d in component])
-            net_explored_locs = reduce((lambda x,y: x.union(y)), [set()]+[d.get_explored_locs() for d in component])
+            net_people_locs = reduce((lambda x, y: x.union(y)), [d.get_people() for d in component])
+            net_explored_locs = reduce((lambda x, y: x.union(y)), [d.get_explored_locs() for d in component])
             for drone in component:
                 drone.set_people_locs(net_people_locs)
                 drone.set_explored_locs(net_explored_locs)

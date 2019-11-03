@@ -49,7 +49,7 @@ class Drone:
         # total => number of tiles in relative quadrant
         count = sum(filter(lambda loc: int(x_comp(loc) and y_comp(loc)), self.explored_locs))
         total = abs(int((WIDTH if x_dir else 0) - self.loc[0]) * int((HEIGHT if y_dir else 0) - self.loc[1]))
-        return 1.0 if count == 0 else count / total
+        return 1.0 if total == 0 else count / total
     
     '''
     determine the average exploration coverage in the four quadrants relative

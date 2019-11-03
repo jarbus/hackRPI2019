@@ -43,13 +43,23 @@ class ReinforceAgent:
     def train(self, env: gym.Env):
         """ Trains model using passed environment. """
         episode = 0
+        batch_counter = 0
+        gradient_buffer = { k: np.zeros_like(v) for k,v in self.model }
+        rmsprop_cache = { k : np.zeros_like(v) for k,v in self.model }
+        recent_reward = 0
+
+        self.toFile("results-%d.txt" % episode)
+        
         while True: # Continuously train over batches of 5 episodes
+            reward_sum = 0
             obs = env.reset() # np.array of [x = params, y = agents]
-            drone_count = obs.shape()[1]
-            xs = [] # An array per tick, with agents stacked to the right
-            hs = [] # An array per tick, with neurons stack to the right
-            dlogps1 = []
+            
+            drone_count = obs.shape()[0]
+            xs = [] # An np array per tick (x = params, y = agents)
+            hs = [] # An np array per tick (x = agents, y = neurons)
+            dlogps1 = [] # Per tick, the action each agent took
             dlogps2 = []
+            drs = []
             
             for tick in range(self.episode_length):
                 if self.render: env.render()
@@ -57,17 +67,57 @@ class ReinforceAgent:
                 actions, hidden = self.act(obs)
 
                 # Record information for backprop
-                xs.append(np.reshape(obs, (1,-1)))
-                hs.append(np.reshape(obs, (1,-1)))
-                y1 = [1 if x >= 0.5 else 0 for x in actions[0,]]
-                y2 = [1 if y >= 0.5 else 0 for y in actions[1,]]
-                dlogps1.append(y1)
-                dlogps2.append(y2)
+                xs.append(obs)
+                hs.append(hidden)
+                dlogps1.append([1 - x if x >= 0.5 else -x for x in actions[0,]])
+                dlogps2.append([1 - x if x >= 0.5 else -x for x in actions[1,]])
+
+                obs, reward, done, _ = env.step(2*actions - 1)
+                recent_reward = reward
+
+                drs.append(reward) # We'll need to copy this for each agent.
+
+            episode += 1
+            batch_counter += 1
+
+            discount_rewards = self._discount_reward(drs)
+            discount_rewards -= np.mean(discount_rewards)
+            discount_rewards /= np.std(discount_rewards)
+            
+            states = np.stack(xs, axis=2)
+            hidden_stack = np.stack(hs, axis=2)
+            dlogps1_stack = np.array(dlogps1)
+            dlogps2_stack = np.array(dlogps2)
+
+            # Generate a gradient per agent
+            for i in range(self.drone_count):
+                episode_states = states[:,i,:]
+                episode_hidden = hidden_stack[i,:,:]
+                episode_dlogp1 = dlogps1_stack[:,i]
+                episode_dlogp2 = dlogps2_stack[:,i]
+
+                episode_dlogp1 *= discount_rewards
+                episode_dlogp2 *= discount_rewards
+                grad1W1, grad1W2 = self._backprop(episode_states, episode_hidden, episode_dlogp1)
+                grad2W1, grad2W2 = self._backprop(episode_states, episode_hidden, episode_dlogp2)
+
+                gradient_buffer["w1"] += (grad1W1 + grad2W1)/2
+                gradient_buffer["w2"] += (grad1W2 + grad2W2)/2
+            
+            if batch_counter == self.batch_size:
+                for k,v in self.model:
+                    rmsprop_cache[k] = self.decay_rate * rmsprop_cache[k] + (1 - self.decay_rate) * gradient_buffer[k]**2
+                    self.model[k] += self.learning_rate*gradient_buffer[k] / np.sqrt(rmsprop_cache[k] + 1e-5)
+                    gradient_buffer[k] = np.zeros_like(v)
+                print("Iteration %d: batch update, most recent reward: %f" % (episode, recent_reward))
+                batch_counter = 0
+
+            if episode % 100 == 0:
+                self.toFile("results-%d.txt" % episode)
                 
+            reward_sum = 0
+            obs = env.reset()
                 
-                
-            if episode % 10 == 9:
-                pass
 
     def _discount_reward(self, rewards: np.array) -> np.array:
         """ Reduces the magnitude of the reward for the earlier actions. """
@@ -89,14 +139,30 @@ class ReinforceAgent:
         signal = np.dot(self.model["w2"], hidden)
         return sigmoid(signal), hidden
 
-    def _backprop_batch(self, *,
-                        dprob_stack: np.array,
-                        hidden_stack: np.array,
-                        states: np.array) -> np.array:
-        """ Returns gradient for weights, ordered dW1, dW2. """
+    def _backprop(self, *,
+                        episode_dprob: np.array,
+                        episode_stack: np.array,
+                        episode_states: np.array) -> np.array:
+        """ Returns gradient for weights, ordered dW1, dW2. Does so for one agent. """
         
-        dW2 = np.dot(hidden_stack.T, dprob_stack).ravel()
-        dh = np.outer(dprob_stack, self.model["w2"])
-        dh[hidden_stack < 0] = 0 # (PreLu)
-        dW1 = np.dot(dh.T, states)
+        dW2 = np.dot(episode_stack.T, episode_dprob).ravel()
+        dh = np.outer(episode_dprob, self.model["w2"])
+        dh[episode_stack < 0] = 0 # (PreLu)
+        dW1 = np.dot(dh.T, episode_states)
         return dW1, dW2
+
+    def toFile(self, name: str):
+        f = open(name, "a")
+        f.write("w1\n")
+        for x in range(input_n):
+            for y in range(hidden_n):
+                f.write("%d " % self.model["w1"][y,x])
+            f.write("\n")
+
+        f.write("w2\n")
+        for x in range(hidden_n):
+            for y in range(output_n):
+                f.write("%d " % self.model["w2"][y,x])
+            f.write("\n")
+
+        f.close()

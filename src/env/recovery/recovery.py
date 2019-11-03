@@ -3,12 +3,13 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 
 import numpy as np
-from functools import reduce, filter
+from functools import reduce
 
 from ..Drone import Drone
 
 VISION_RANGE = 5.0
 COMM_RANGE = 10.0
+DRONE_SPEED = 10.0
 
 class Recovery(gym.Env):
     """ 
@@ -32,7 +33,9 @@ class Recovery(gym.Env):
         self.num_people = num_people
         
         # A complete network of drones including information about distance to other drones
-        self.drones = [Drone(id, base_camp) for id in range(1, drone_count)]
+        self.drones = [Drone(id, DRONE_SPEED, COMM_RANGE, VISION_RANGE, base_camp, map_size) for id in range(1, drone_count)]
+        # Base camp drone 0
+        self.drones[0].loc = [0, 1]
  
         # initializes 2xnum_people array of people, person i at
         # self.people[i][0], self.people[i][1]
@@ -87,14 +90,14 @@ class Recovery(gym.Env):
                 cur = queue.pop()
                 # update cur 
                 close_bins = self.neighboring_bins(cur.loc[0], cur.loc[1], VISION_RANGE, ppl_bins)
-                potential_people = reduce(lambda x,y: x.union(y)), close_bins)
+                potential_people = reduce(lambda x,y: x.union(y), close_bins)
                 people = filter(lambda p: d.can_see(p, VISION_RANGE), potential_people)
-                cur.update(WIDTH, HEIGHT, VISION_RANGE, people)
+                cur.update(self.WIDTH, self.HEIGHT, VISION_RANGE, people)
                 # explore the neighbors of cur
                 component.add(cur)
                 # find unexplored neighbors and add them to the queue
                 # only check this and surrounding bins
-               for bin in neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
+                for bin in neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
                     # check all drones in this bin
                     for d in bin:
                         if d != cur and cur.can_communicate(d) and d in unexplored:
@@ -105,7 +108,9 @@ class Recovery(gym.Env):
         return components
     
     # step function: runs every iteration of the simulation
-    def step(self, action):
+    def step(self, action_n):
+        for i in range(1, len(self.drones)):
+            self.drones[i].do_move(action_n[i][0], action_n[i][1])
         # determine the isolated networks and update the drones
         components = self.get_connected_components()
         
@@ -116,12 +121,11 @@ class Recovery(gym.Env):
             for drone in component:
                 drone.set_people_locs(net_people_locs)
                 drone.set_explored_locs(net_explored_locs)
+
+        # observations
+
         
-        # tell all of the drones to move
-        for d in self.drones:
-            d.calc_move()
-        for d in self.drones:
-            d.do_move()
+        return obs_n, Reward, done, None
 
     def reset(self):
         self.bounds = (0, 0)

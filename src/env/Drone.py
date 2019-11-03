@@ -1,5 +1,6 @@
 from gym import spaces
 import sys
+import random
 
 DRONE_SPEED = 1.0
 
@@ -13,6 +14,10 @@ class Drone:
 
         self.people_locs = set() # floating points
         self.explored_locs = set() # tiles in grid
+        
+        # each between -1 and 1; represents direction of movement
+        self.dir_x = 0.0
+        self.dir_y = 0.0
 
     '''
     @param vision: the set of people/locations that this drone can see
@@ -20,11 +25,18 @@ class Drone:
     def look(self, vision):
         self.people_locs = self.people_locs.union(vision)
 
-    '''
-    return a grid representation of the information collected so far
-    '''
-    def message(self):
-        return self.people_locs, explored_locs
+    def set_people_locs(self, people_locs):
+        self.people_locs
+
+    def get_people_locs(self):
+        return self.people_locs
+    
+    def set_explored_locs(self, explored_locs):
+        self.explored_locs = explored_locs
+        
+    def get_explored_locs(self):
+        return self.explored_locs
+    
 
     '''
     receive an update from the connected network
@@ -32,18 +44,22 @@ class Drone:
     def receive(self, people_locs, explored_locs):
         look(ppl)
         self.explored_locs = self.explored_locs.union(explored_locs)
-
-
+    
+    # return whether or not the current drone is in range of another drone (Euclidean distance)
+    def is_in_range(self, d):
+        return ((self.loc[0]-d.loc[0])**2+(self.loc[1]-d.loc[1])**2)**0.5 <= VISION
+        
+        
+    # determine movement direction
+    def calc_move(self):
+        #TODO use ML algorithm to pick movement
+        self.dir_x = 0.0
+        self.dir_y = 0.0
+        
+        
+    # move location
     def move(self):
-        # TODO use ML algorithm to determine direction
-        
-        # each between -1 and 1
-        dir_x = 0.0
-        dir_y = 0.0
-        
         dir_len = (dir_x**2+dir_y**2)**(0.5)
-        
-        # actual difference in location
         if dir_len > sys.float_info.epsilon:
             self.loc[0] += DRONE_SPEED * dir_x/dir_len
             self.loc[1] += DRONE_SPEED * dir_y/dir_len

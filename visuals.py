@@ -52,9 +52,12 @@ def play_graphics(win_x, win_y, max_x, max_y, fd):
 				pyglet.graphics.draw(4, GL_QUADS, ('v2f', [x, y, x + x_scale, y, x, y + y_scale, x + x_scale, y + y_scale]))
 			elif (o_type == "basecamp"):
 				pyglet.graphics.draw(3, GL_TRIANGLES, ('v2f', [x, y, x + (x_scale/2), y + y_scale, x + x_scale, y]))
+			elif (o_type == "person"):
+				pyglet.graphics.draw(3, GL_TRIANGLES, ('v2f', [x, y+(y_scale/2), x + (x_scale/2), y + y_scale, x + (x_scale/2), y]))
+				pyglet.graphics.draw(3, GL_TRIANGLES, ('v2f', [x+(x_scale), y+(y_scale/2), x + (x_scale/2), y + y_scale, x + (x_scale/2), y]))
 
 
-		time.sleep(1)
+		time.sleep(0.1)
 
 
 		# pyglet.graphics.draw_indexed(4, pyglet.gl.GL_TRIANGLES,
@@ -76,4 +79,4 @@ def play_graphics(win_x, win_y, max_x, max_y, fd):
 	pyglet.app.run()
 
 
-play_graphics(640, 480, 64, 48, [[(18,24,"droid"), (7,21,"droid"), (44,44,"basecamp")], [(9,12,"droid"), (36,42,"droid"), (44,44,"basecamp")]])
+play_graphics(640, 480, 64, 48, [[(18,24,"droid"), (7,21,"droid"), (44,44,"person")], [(9,12,"droid"), (36,42,"droid"), (44,44,"basecamp")]])

@@ -100,7 +100,6 @@ class Recovery(gym.Env):
                         if d != cur and cur.can_communicate(d) and d in unexplored:
                             queue.append(d)
                             unexplored.remove(d)
->>>>>>> a48da6d90d3a08135e2601feee2f4127b4db8b1e
             # completed component: add to the list of components
             components.append(component)
         return components

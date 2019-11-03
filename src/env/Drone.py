@@ -2,7 +2,6 @@ from gym import spaces
 import sys
 import random
 import utils
-import maths
 
 DRONE_SPEED = 1.0
 

@@ -11,9 +11,6 @@ class Recovery(gym.Env):
     """ 
     map_size = x,y for size of map. 0,0 is the bottom left corner.
     
-    Clusters generated using Poisson distribution. Each cluster must have at least one
-    person, so mean = cluster_lambda + 1. If cluster = False, each cluster has 1 person. 
-
     Drones are randomly placed within a starting area. """
     
     metadata = {"render.modes": ["human"]}
@@ -22,26 +19,21 @@ class Recovery(gym.Env):
                  map_size: np.array,
                  drone_count: int,
                  base_camp: np.array,
-                 cluster: bool = False,
-                 cluster_count: int = 20,
-                 cluster_lambda: int = 0):
+                 num_people):
         
         self.base_camp_loc = base_camp
         self.bounds = map_size
+        self.map_x = map_size[0]
+        self.map_y = map_size[1]
+        self.num_people = num_people
         
         # A complete network of drones including information about distance to other drones
-        self.drones = []   
-        self.people = []
-
-        people_x = np.random.random_sample(cluster_count);
-        people_y = np.random.random_sample(cluster_count);
-        
-        for i in range(drone_count):
-            self.drones[i] = Drone(base_camp)
-
-        cluster_centers = np.zeros((2, cluster_count))
-        for i in range(cluster_count):
-            pass
+        self.drones = [Drone(id, base_camp) for id in range(1, drone_count)]
+ 
+        # initializes 2xnum_people array of people, person i at
+        # self.people[i][0], self.people[i][1]
+        self.people = np.random.uniform(0, self.map_x, 2*num_people)
+        np.resize(self.people, (2, self.num_people))
 
 
     '''
@@ -109,6 +101,11 @@ class Recovery(gym.Env):
             d.move()
 
     def reset(self):
+        self.bounds = (0, 0)
+        self.map_x = 0
+        self.map_y = 0
+        self.num_people = 0
+        self.base_camp_loc = 0
         pass
 
     def render(self, mode="human"):

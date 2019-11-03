@@ -54,7 +54,7 @@ class Recovery(gym.Env):
             for dx in range(-1, 2):
                 bin_x = x + dx
                 bin_y = y + dy
-                if bin_x < 0 or bin_x >= bins.length() or bin_y < 0 or bin_y >= bins[0].length(): continue
+                if bin_x < 0 or bin_x >= bins.size() or bin_y < 0 or bin_y >= bins[0].size(): continue
                 yield bins[bin_x][bin_y]
         
 
@@ -111,7 +111,7 @@ class Recovery(gym.Env):
         
         # consolidate information in each connected components
         for component in components:
-            net_people_locs = reduce((lambda x, y: x.union(y)), [d.get_people() for d in component])
+            net_people_locs = reduce((lambda x, y: x.union(y)), [d.get_people_locs() for d in component])
             net_explored_locs = reduce((lambda x, y: x.union(y)), [d.get_explored_locs() for d in component])
             for drone in component:
                 drone.set_people_locs(net_people_locs)

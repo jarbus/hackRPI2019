@@ -3,8 +3,6 @@ import sys
 import random
 import utils
 
-DRONE_SPEED = 1.0
-
 class Drone:
     def __init__(self, base_camp_loc):
         self.base_camp_loc = base_camp_loc
@@ -20,14 +18,22 @@ class Drone:
         self.dir_x = 0.0
         self.dir_y = 0.0
 
-    '''
-    @param vision: the set of people/locations that this drone can see
-    '''
-    def look(self, vision):
-        self.people_locs = self.people_locs.union(vision)
+    # mark now explored tiles and found people
+    # ppl is a list of people visible to this drone
+    def update(self, WIDTH, HEIGHT, VISION_RANGE, ppl):
+        # add tiles within vision range of this drone
+        for dx in range(-int(VISION_RANGE), int(VISION_RANGE)):
+            for dy in range(-int(VISION_RANGE), int(VISION_RANGE)):
+                grid_x = int(self.loc[x]+dx)
+                grid_y = int(self.loc[y]+dy)
+                if self.can_see(grid_x, grid_y):
+                    self.explored_locs.add((grid_x, grid_y))
+        
+        # add people within vision range of this drone
+        self.people_locs.union(ppl)
 
     def set_people_locs(self, people_locs):
-        self.people_locs
+        self.people_locs = people_locs
 
     def get_people_locs(self):
         return self.people_locs
@@ -37,7 +43,6 @@ class Drone:
         
     def get_explored_locs(self):
         return self.explored_locs
-
 
     # helper for calc_quadrant_coverages
     # x_dir and y_dir are booleans indicating quadrant direction (x_dir = True ~ right)
@@ -61,20 +66,13 @@ class Drone:
         bot_left_avg = self.calc_quadrant_coverage(false, false, WIDTH, HEIGHT)
         return top_right_avg, top_left_avg, bot_right_avg, bot_left_avg
         
+    # return whether or not the current drone can see the given person (Euclidean distance)
+    def can_see(self, p, VISION_RANGE):
+        return utils.euclid(self.loc[0], self.loc[1], p[0], p[1]) <= VISION_RANGE
         
-        
-    
-
-    '''
-    receive an update from the connected network
-    '''
-    def receive(self, people_locs, explored_locs):
-        look(ppl)
-        self.explored_locs = self.explored_locs.union(explored_locs)
-    
-    # return whether or not the current drone is in range of another drone (Euclidean distance)
-    def is_in_range(self, d):
-        return utils.euclid(self.loc[0], self.loc[1], d.loc[0], d.loc[1]) <= VISION
+    # return whether or not the current drone is in range of another drone 
+    def can_communicate(self, d, COMM_RANGE):
+        return self.can_see(self, (d.loc[0], d.loc[1]), COMM_RANGE)
         
     # determine movement direction
     def calc_move(self):
@@ -83,7 +81,7 @@ class Drone:
         self.dir_y = 0.0
         
     # move location
-    def move(self, WIDTH, HEIGHT):
+    def move(self, DRONE_SPEED, WIDTH, HEIGHT):
         dir_len = utils.euclid(dir_x, dir_y)
         if dir_len > sys.float_info.epsilon:
             self.loc[0] += DRONE_SPEED * dir_x/dir_len

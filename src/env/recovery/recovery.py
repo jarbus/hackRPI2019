@@ -67,26 +67,24 @@ class Recovery(gym.Env):
             # find the component of a random unexplored drone
             queue = [unexplored.pop()]
             component = set()
-            while queue.size() != 0:
+            while queue.size() > 0:
                 cur = queue.pop()
-                # if we haven't seen cur before, add it to this component,
-                # as well as its unexplored neighbors
-                if cur in unexplored:
-                    component.add(cur)
-                    # find unexplored neighbors and add them to the queue
-                    # only check this and surrounding bins
-                    for i in range(-1,2):
-                        for j in range(-1,2):
-                            x, y = self.get_bin(cur)
-                            x += i
-                            y += j
-                            if x < 0 or x >= bins.length()  or y < 0 or y >= bins[0].length(): continue
-                            # check all drones in this bin
-                            bin = bins[x][y]
-                            for d in bin:
-                                if cur.is_in_range(d) and d in unexplored:
-                                    queue.append(d)
-                                    unexplored.remove(d)
+                # explore the neighbors of cur
+                component.add(cur)
+                # find unexplored neighbors and add them to the queue
+                # only check this and surrounding bins
+                for i in range(-1,2):
+                    for j in range(-1,2):
+                        x, y = self.get_bin(cur)
+                        x += i
+                        y += j
+                        if x < 0 or x >= bins.length() or y < 0 or y >= bins[0].length(): continue
+                        # check all drones in this bin
+                        bin = bins[x][y]
+                        for d in bin:
+                            if d != cur and cur.is_in_range(d) and d in unexplored:
+                                queue.append(d)
+                                unexplored.remove(d)
             # completed component: add to the list of components
             components.append(component)
         return components

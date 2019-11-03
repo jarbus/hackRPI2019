@@ -121,7 +121,7 @@ class Recovery(gym.Env):
         for d in self.drones:
             d.calc_move()
         for d in self.drones:
-            d.move()
+            d.do_move()
 
     def reset(self):
         self.bounds = (0, 0)

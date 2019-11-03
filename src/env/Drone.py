@@ -81,7 +81,7 @@ class Drone:
         self.dir_y = 0.0
         
     # move location
-    def move(self, DRONE_SPEED, WIDTH, HEIGHT):
+    def do_move(self, DRONE_SPEED, WIDTH, HEIGHT):
         dir_len = utils.euclid(dir_x, dir_y)
         if dir_len > sys.float_info.epsilon:
             self.loc[0] += DRONE_SPEED * dir_x/dir_len

@@ -1,7 +1,7 @@
 # from gym import spaces
 import sys
 import random
-import env.utils
+from . import utils
 
 class Drone:
     def __init__(self, *,
@@ -96,7 +96,7 @@ class Drone:
     def do_move(self,
                 dir_x: float,
                 dir_y: float):
-        dir_len = utils.euclid(dir_x, dir_y)
+        dir_len = utils.pythagorean(a = dir_x, b = dir_y)
         if dir_len > sys.float_info.epsilon:
             self.loc[0] += self.drone_speed * dir_x/dir_len
             self.loc[1] += self.drone_speed * dir_y/dir_len

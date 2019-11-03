@@ -31,6 +31,7 @@ class Recovery(gym.Env):
         self.WIDTH = map_size[0]
         self.HEIGHT = map_size[1]
         self.num_people = num_people
+        self.drone_count = drone_count
         
         # A complete network of drones including information about distance to other drones
         self.drones = [Drone(drone_id=id, drone_speed=DRONE_SPEED, comm_range=COMM_RANGE, vision_range=VISION_RANGE, base_camp_loc=base_camp, map_size=map_size) for id in range(1, drone_count)]
@@ -140,11 +141,15 @@ class Recovery(gym.Env):
         return obs_n, total_ppl_locs, done, None
 
     def reset(self):
-        self.drones = [Drone(drone_id=id, drone_speed=DRONE_SPEED, comm_range=COMM_RANGE, vision_range=VISION_RANGE, base_camp_loc=self.base_camp, map_size=self.map_size) for id in range(1, self.drone_count)]
+        self.drones = [Drone(drone_id=id, drone_speed=DRONE_SPEED, comm_range=COMM_RANGE, vision_range=VISION_RANGE, base_camp_loc=self.base_camp_loc, map_size=self.bounds) for id in range(1, self.drone_count)]
         self.drones[0].loc = self.base_camp_loc
 
-        pass
+        self.people = np.random.uniform(0, self.WIDTH, 2*self.num_people)
+        np.resize(self.people, (2, self.num_people))
 
+        obs, _ ,_ ,_ = self.step(np.zeros((len(self.drones) - 1, 2)))
+        return obs
+        
     def render(self, mode="human"):
         pass
 

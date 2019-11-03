@@ -3,9 +3,12 @@ from gym import error, spaces, utils
 from gym.utils import seeding
 
 import numpy as np
-from functools import reduce
+from functools import reduce, filter
 
 from ..Drone import Drone
+
+VISION_RANGE = 5.0
+COMM_RANGE = 10.0
 
 class Recovery(gym.Env):
     """ 
@@ -42,18 +45,36 @@ class Recovery(gym.Env):
     '''
     helper functions for step function
     '''
-    def get_bin(self, d):
-        return (int(d.loc[0]//VISION), int(d.loc[1]//VISION))
+    def get_bin_index(self, loc_x, loc_y, SCALAR):
+        return (int(loc_x//SCALAR), int(loc_y//SCALAR))
+        
+    def neighboring_bins(self, loc_x, loc_y, SCALAR, bins):
+        x, y = self.get_bin_index(loc_x, loc_y, SCALAR)
+        for dx in range(-1, 2):
+            for dx in range(-1, 2):
+                bin_x = x + dx
+                bin_y = y + dy
+                if bin_x < 0 or bin_x >= bins.length() or bin_y < 0 or bin_y >= bins[0].length(): continue
+                yield bins[bin_x][bin_y]
+        
 
     # drones are connected if they have a "path" of connection to one another
-    # this function returns a list of drone isolated networks
+    # this function returns a list of drone isolated networks,
+    # and updates all of the drones in the process
     def get_connected_components(self):
-        # set up data structure to handle "collisions" of drones
-        bins = [[set() for y in range(int(self.HEIGHT//VISION))] for x in range(int(self.WIDTH//VISION))]
+        # set up data structure to handle "collisions" of drones / COMM_RANGE of people
+        bins = [[set() for y in range(int(self.HEIGHT//COMM_RANGE))] for x in range(int(self.WIDTH//COMM_RANGE))]
+        ppl_bins = [[set() for y in range(int(self.HEIGHT//VISION_RANGE))] for x in range(int(self.WIDTH//VISION_RANGE))]
+        
         # place drones in their respective bins
-        for d in self.drones:
-            x,y = self.get_bin(d)
+        for d in drones:
+            x,y = self.get_bin_index(d.loc[0], d.loc[1], COMM_RANGE)
             bins[x][y].add(d)
+        
+        # place people in the right ppl_bin
+        for p in self.people:
+            x,y = self.get_bin_index(p[0], p[1], VISION_RANGE)
+            bins[x][y].add(p)
         
         # DFS drones to get connected components
         components = []
@@ -64,10 +85,16 @@ class Recovery(gym.Env):
             component = set()
             while queue.size() > 0:
                 cur = queue.pop()
+                # update cur 
+                close_bins = self.neighboring_bins(cur.loc[0], cur.loc[1], VISION_RANGE, ppl_bins)
+                potential_people = reduce(lambda x,y: x.union(y)), close_bins)
+                people = filter(lambda p: d.can_see(p, VISION_RANGE), potential_people)
+                cur.update(WIDTH, HEIGHT, VISION_RANGE, people)
                 # explore the neighbors of cur
                 component.add(cur)
                 # find unexplored neighbors and add them to the queue
                 # only check this and surrounding bins
+<<<<<<< HEAD
                 for i in range(-1, 2):
                     for j in range(-1, 2):
                         x, y = self.get_bin(cur)
@@ -80,13 +107,21 @@ class Recovery(gym.Env):
                             if d != cur and cur.is_in_range(d) and d in unexplored:
                                 queue.append(d)
                                 unexplored.remove(d)
+=======
+               for bin in neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
+                    # check all drones in this bin
+                    for d in bin:
+                        if d != cur and cur.can_communicate(d) and d in unexplored:
+                            queue.append(d)
+                            unexplored.remove(d)
+>>>>>>> a48da6d90d3a08135e2601feee2f4127b4db8b1e
             # completed component: add to the list of components
             components.append(component)
         return components
     
     # step function: runs every iteration of the simulation
     def step(self, action):
-        # determine the isolated networks
+        # determine the isolated networks and update the drones
         components = self.get_connected_components()
         
         # consolidate information in each connected components

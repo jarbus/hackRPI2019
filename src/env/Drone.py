@@ -1,6 +1,7 @@
 from gym import spaces
 import sys
 import random
+import utils
 
 DRONE_SPEED = 1.0
 
@@ -47,7 +48,7 @@ class Drone:
     
     # return whether or not the current drone is in range of another drone (Euclidean distance)
     def is_in_range(self, d):
-        return ((self.loc[0]-d.loc[0])**2+(self.loc[1]-d.loc[1])**2)**0.5 <= VISION
+        return utils.euclid(self.loc[0], self.loc[1], d.loc[0], d.loc[1]) <= VISION
         
         
     # determine movement direction
@@ -56,10 +57,9 @@ class Drone:
         self.dir_x = 0.0
         self.dir_y = 0.0
         
-        
     # move location
     def move(self):
-        dir_len = (dir_x**2+dir_y**2)**(0.5)
+        dir_len = utils.euclid(dir_x, dir_y)
         if dir_len > sys.float_info.epsilon:
             self.loc[0] += DRONE_SPEED * dir_x/dir_len
             self.loc[1] += DRONE_SPEED * dir_y/dir_len

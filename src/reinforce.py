@@ -113,7 +113,9 @@ class ReinforceAgent:
                 batch_counter = 0
 
             if episode % 100 == 0:
+                print("Writting to file %d..." % episode)
                 self.toFile("results-%d.txt" % episode)
+                print("Done.")
                 
             reward_sum = 0
             obs = env.reset()

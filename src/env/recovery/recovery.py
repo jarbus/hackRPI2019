@@ -40,7 +40,7 @@ class Recovery(gym.Env):
  
         # initializes 2xnum_people array of people, person i at
         # self.people[i][0], self.people[i][1]
-        self.people = np.random.uniform(0, self.WIDTH, 2*num_people)
+        self.people = np.random.uniform(0, self.WIDTH, (2,num_people))
         np.resize(self.people, (2, self.num_people))
 
         if(debug):
@@ -55,7 +55,7 @@ class Recovery(gym.Env):
     def neighboring_bins(self, loc_x, loc_y, SCALAR, bins):
         x, y = self.get_bin_index(loc_x, loc_y, SCALAR)
         for dx in range(-1, 2):
-            for dx in range(-1, 2):
+            for dy in range(-1, 2):
                 bin_x = x + dx
                 bin_y = y + dy
                 if bin_x < 0 or bin_x >= bins.size() or bin_y < 0 or bin_y >= bins[0].size(): continue
@@ -98,7 +98,7 @@ class Recovery(gym.Env):
                 component.add(cur)
                 # find unexplored neighbors and add them to the queue
                 # only check this and surrounding bins
-                for b in neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
+                for b in self.neighboring_bins(cur.loc[0], cur.loc[1], COMM_RANGE, bins):
                     # check all drones in this bin
                     for d in b:
                         if d != cur and cur.can_communicate(d) and d in unexplored:
@@ -144,10 +144,10 @@ class Recovery(gym.Env):
         self.drones = [Drone(drone_id=id, drone_speed=DRONE_SPEED, comm_range=COMM_RANGE, vision_range=VISION_RANGE, base_camp_loc=self.base_camp_loc, map_size=self.bounds) for id in range(1, self.drone_count)]
         self.drones[0].loc = self.base_camp_loc
 
-        self.people = np.random.uniform(0, self.WIDTH, 2*self.num_people)
+        self.people = np.random.uniform(0, self.WIDTH, (2,self.num_people))
         np.resize(self.people, (2, self.num_people))
 
-        obs, _ ,_ ,_ = self.step(np.zeros((len(self.drones) - 1, 2)))
+        obs, _ ,_ ,_ = self.step(np.zeros((len(self.drones), 2)))
         return obs
         
     def render(self, mode="human"):

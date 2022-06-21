@@ -4,7 +4,7 @@ gym==0.15.3
 importlib-metadata==0.23
 jedi==0.15.1
 more-itertools==7.2.0
-numpy==1.17.3
+numpy==1.22.0
 parso==0.5.1
 pluggy==0.13.0
 pyflakes==2.1.1
